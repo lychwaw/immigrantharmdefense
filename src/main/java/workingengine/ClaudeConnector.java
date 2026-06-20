@@ -5,13 +5,14 @@ import com.anthropic.client.okhttp.AnthropicOkHttpClient;
 import com.anthropic.models.messages.Message;
 import com.anthropic.models.messages.MessageCreateParams;
 
-public class LLMconnect {
+public class ClaudeConnector implements LLMProvider {
     private static final AnthropicClient client = AnthropicOkHttpClient.fromEnv(); // picks up env API key for claude model
 
-    public static String sendMessage(String systemPrompt, String userMessage, String model) {
+    @Override
+    public String sendMessage(String systemPrompt, String userMessage, String model) {
         MessageCreateParams params = MessageCreateParams.builder()
             .model(model)
-            .maxTokens(200L)    
+            .maxTokens(200L)
             .system(systemPrompt)
             .addUserMessage(userMessage) // parameters for the message sent to model includes these items.
             .build();

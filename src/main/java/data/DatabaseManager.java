@@ -37,6 +37,37 @@ private static final String DB_URL = "jdbc:sqlite:liamsredteamimmigrantdb.db";  
 
 
     }
+    public static void saveSession(String sessionId, String personaId, String scenarioId, String mode, String startTime) {
+        String sql = "INSERT OR REPLACE INTO sessions (id, persona_id, scenario_id, mode, start_time, end_time) "
+                   + "VALUES (?, ?, ?, ?, ?, ?)";
+        try (Connection conn = connect(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, sessionId);
+            ps.setString(2, personaId);
+            ps.setString(3, scenarioId);
+            ps.setString(4, mode);
+            ps.setString(5, startTime);
+            ps.setString(6, null);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("Failed to save session: " + e.getMessage());
+        }
+    }
+
+    public static void saveTurn(String sessionId, int turnNumber, String speaker, String text, String timestamp) {
+        String sql = "INSERT INTO turns (session_id, turn_number, speaker, text, timestamp) "
+                   + "VALUES (?, ?, ?, ?, ?)";
+        try (Connection conn = connect(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, sessionId);
+            ps.setInt(2, turnNumber);
+            ps.setString(3, speaker);
+            ps.setString(4, text);
+            ps.setString(5, timestamp);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("Failed to save turn: " + e.getMessage());
+        }
+    }
+
     public static void saveScore(String sessionId, ExploitationScore score) {
     String sql = "INSERT OR REPLACE INTO scores (session_id, financial_risk, legal_endangerment, "
                + "coercion_isolation, info_manipulation, total_score, notes) "
