@@ -1,0 +1,30 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "DbTest",
+      "request": "launch",
+      "mainClass": "uctliam.yourproject.DbTest",
+      "projectName": "HacakthonFinal"
+    },
+    {
+      "type": "java",
+      "name": "ApiTest",
+      "request": "launch",
+      "mainClass": "uctliam.yourproject.ApiTest",
+      "projectName": "HacakthonFinal",
+      "env": {
+        "ANTHROPIC_API_KEY": "${env:ANTHROPIC_API_KEY}"
+      }
+    },
+    {
+      "type": "java",
+      "name": "HarmAuditor",
+      "request": "launch",
+      "mainClass": "uctliam.yourproject.HarmAuditor",
+      "projectName": "HacakthonFinal",
+      "vmArgs": "--module-path \"C:/Users/ltcac/Documents/javafx-sdk-26.0.1/lib\" --add-modules javafx.base,javafx.controls,javafx.fxml,javafx.graphics"
+    }
+  ]
+}
