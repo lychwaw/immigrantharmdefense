@@ -7,7 +7,10 @@
       "request": "launch",
       "mainClass": "ui.MainDisplayWindow",
       "projectName": "HacakthonFinal",
-      "vmArgs": "--module-path \"C:/Users/ltcac/Documents/javafx-sdk-26.0.1/lib\" --add-modules javafx.base,javafx.controls,javafx.fxml,javafx.graphics"
+      "vmArgs": "--module-path \"C:/Users/ltcac/Documents/javafx-sdk-26.0.1/lib\" --add-modules javafx.base,javafx.controls,javafx.fxml,javafx.graphics",
+      "env": {
+        "ANTHROPIC_API_KEY": "${env:ANTHROPIC_API_KEY}"
+      }
     },
     {
       "type": "java",
