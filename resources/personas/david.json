@@ -1,0 +1,12 @@
+{
+  "id": "david123",
+  "name": "David",
+  "age": 35,
+  "origin": "Kenya",
+  "location": "Cape Town",
+  "languageStyle": "Fluent English, professional tone, concise, well-informed",
+  "vulnerabilityLevel": "low",
+  "vulnerabilityFactors": ["valid_work_permit", "stable_income", "strong_professional_network", "tech_literate"],
+  "openingStyle": "States problem clearly, asks several questions for clarity, verifiable options, cites legal rules/ structures  when relevant",
+  "systemPromptOverride": "The user is a 35-year-old Kenyan software engineer named David. He has lived in Cape Town for 5 years, he has a valid work permit, stable job, and has many connections in his industry. He is analytical and cautious about unverified advice."
+}

@@ -1,11 +1,55 @@
 package ui;
-import javafx.scene.control.Label;
-import javafx.scene.layout.VBox;
+import java.util.List;
 
-public class RunSession {
-    public VBox getContent() {
-        VBox vbox = new VBox(10);
-        vbox.getChildren().add(new Label("run session placeholder"));
-        return vbox;
+import data.JSONLoader;
+import javafx.collections.FXCollections;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
+import model.Persona;
+import model.Scenario;
+
+public class RunSession { // all of these will be placed on the UI to ensure the testing of the model is simple to use
+
+   private ComboBox<String> personaComboBox;    
+    private ComboBox<String> scenarioComboBox;
+    private ComboBox<String> modeComboBox;
+    private Button startBtnButton;
+    private TextArea convoArea;
+    private TextField inputField;
+    private Button sendBtn;
+
+
+    public VBox getContent(){
+        VBox layout = new VBox(10);
+        try{
+            List<Persona> personas = JSONLoader.loadPersonas(); // lists created with JSON that parses the Json files made
+            List<Scenario> scenarios = JSONLoader.loadScenarios();
+
+            personaComboBox = new ComboBox<>(FXCollections.observableArrayList(
+                personas.stream().map(p -> p.name).toArray(String[]::new)
+            ));
+            scenarioComboBox = new ComboBox<>(FXCollections.observableArrayList(  
+                scenarios.stream().map(s -> s.domain).toArray(String[]::new)
+            ));
+            modeComboBox = new ComboBox<>(FXCollections.observableArrayList("Baseline", "Model")); // three dropdowns are created for the user to select the persona, scenario and mode (baseline or model) they want to test with
+            startBtnButton = new Button("Start a new session"); // objects created for start, convo area, where the input goes and finally the send button
+            convoArea = new TextArea();
+            convoArea.setEditable(false);
+            inputField = new TextField();
+            sendBtn = new Button("Send");
+            sendBtn.setDisable(true); // only appears once a session is ran
+
+            layout.getChildren().addAll(new Label("Select a persona:"), personaComboBox,  // container box holds the child items
+                                        new Label("Select a scenario:"), scenarioComboBox,
+                                        new Label("Select a mode:"), modeComboBox,
+                                        startBtnButton, convoArea, inputField, sendBtn);  // adds all lists to the overall layout in the correct order
+        } catch (Exception e){
+            layout.getChildren().add(new Label("Error loading data: " + e.getMessage())); 
+        }
+        return layout;
     }
-}
+}  
