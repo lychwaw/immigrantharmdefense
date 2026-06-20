@@ -3,23 +3,10 @@
  */
 
 package uctliam.yourproject;
-import javafx.application.Application;
-import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.stage.Stage;
+import ui.MainDisplayWindow;
 
-
-/**
- *
- * @author ltcac
- */
-public class HarmAuditor extends Application {
-    public void start(Stage stage) {
-        stage.setScene(new Scene(new Label("My Harm Auditor Ready"), 400, 300));
-        stage.setTitle("Harm Auditor");
-        stage.show();
-    }
+public class HarmAuditor {
     public static void main(String[] args) {
-        launch();
+        MainDisplayWindow.launch(MainDisplayWindow.class, args);
     }
 }

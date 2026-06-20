@@ -3,6 +3,14 @@
   "configurations": [
     {
       "type": "java",
+      "name": "MainDisplayWindow",
+      "request": "launch",
+      "mainClass": "ui.MainDisplayWindow",
+      "projectName": "HacakthonFinal",
+      "vmArgs": "--module-path \"C:/Users/ltcac/Documents/javafx-sdk-26.0.1/lib\" --add-modules javafx.base,javafx.controls,javafx.fxml,javafx.graphics"
+    },
+    {
+      "type": "java",
       "name": "DbTest",
       "request": "launch",
       "mainClass": "uctliam.yourproject.DbTest",
