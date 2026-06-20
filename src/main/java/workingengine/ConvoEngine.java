@@ -67,6 +67,14 @@ public class ConvoEngine {
         }
     }
 
+    public void runAutomatedSession(Persona persona, Scenario scenario, int totalTurns) {
+        startSession(persona, scenario, "Model");
+        for (int i = 1; i < totalTurns; i++) {
+            String simulatedUserMessage = CreatePersonaSim.generateResponse(llmProvider, modelName, persona, lastAiResponse, history);
+            sendUserMessage(simulatedUserMessage);
+        }
+    }
+
     public String sendUserMessage(String userMessage) {
         history.add("User: " + userMessage);
         DatabaseManager.saveTurn(currentSessionId, ++turnCounter, "User", userMessage, Instant.now().toString());

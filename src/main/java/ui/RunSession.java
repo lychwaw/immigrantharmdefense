@@ -12,9 +12,10 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import model.Persona;
 import model.Scenario;
+import workingengine.BatchRun;
 import workingengine.ClaudeConnector;
 import workingengine.ConvoEngine;
-import workingengine.OpenRouterConnector;
+import workingengine.GeminiConnector;
 
 public class RunSession { // all of these will be placed on the UI to ensure the testing of the model is simple to use
 
@@ -30,8 +31,8 @@ public class RunSession { // all of these will be placed on the UI to ensure the
 
     private ConvoEngine createEngineForModelChoice(String modelChoice) {
         switch (modelChoice) {
-            case "Llama 3.2 3B (OpenRouter)":
-                return new ConvoEngine(new OpenRouterConnector(), "meta-llama/llama-3.2-3b-instruct:free");
+            case "Gemini 2.5 Flash Lite":
+                return new ConvoEngine(new GeminiConnector(), "gemini-2.5-flash-lite");
             case "Claude Sonnet 4.6":
             default:
                 return new ConvoEngine(new ClaudeConnector(), "claude-sonnet-4-6");
@@ -51,7 +52,7 @@ public class RunSession { // all of these will be placed on the UI to ensure the
                 scenarios.stream().map(s -> s.domain).toArray(String[]::new)
             ));
             modeComboBox = new ComboBox<>(FXCollections.observableArrayList("Baseline", "Model")); // three dropdowns are created for the user to select the persona, scenario and mode (baseline or model) they want to test with
-            modelComboBox = new ComboBox<>(FXCollections.observableArrayList("Claude Sonnet 4.6", "Llama 3.2 3B (OpenRouter)"));
+            modelComboBox = new ComboBox<>(FXCollections.observableArrayList("Claude Sonnet 4.6", "Gemini 2.5 Flash Lite"));
             modelComboBox.setValue("Claude Sonnet 4.6");
             startBtnButton = new Button("Start a new session"); // objects created for start, convo area, where the input goes and finally the send button
             convoArea = new TextArea();
@@ -74,7 +75,7 @@ public class RunSession { // all of these will be placed on the UI to ensure the
                 if (selectedPersona == null || selectedScenario == null) {
                     convoArea.appendText("Could not find the selected persona/scenario in the loaded data.\n");
                     return;
-                }
+                }   // when start button clicked, the correct values are taken from the dropdowns
 
                 engine = createEngineForModelChoice(modelChoice);
                 startBtnButton.setDisable(true);
@@ -93,12 +94,38 @@ public class RunSession { // all of these will be placed on the UI to ensure the
                 });
                 task.setOnFailed(evt -> {
                     convoArea.appendText("AI: Error: " + task.getException().getMessage() + "\n");
-                    startBtnButton.setDisable(false);
+                    startBtnButton.setDisable(false);  // different text strings are added to the convo area after certain actions, and the buttons are enabled/disabled depending on the state of the session
                 });
                 Thread thread = new Thread(task);
                 thread.setDaemon(true);
                 thread.start();
             });
+
+            Button batchBtn = new Button("Run All Sessions");
+            batchBtn.setOnAction(e -> { // when the batch button is clicked, the batch run is executed and the results are displayed in the conversation area
+                convoArea.clear();
+                convoArea.appendText("Running batch...\n");
+                batchBtn.setDisable(true);
+
+                Task<String> batchTask = new Task<>() {
+                    @Override
+                    protected String call() {
+                        return BatchRun.runAll(5);
+                    }
+                };
+                batchTask.setOnSucceeded(evt -> {
+                    convoArea.appendText(batchTask.getValue());
+                    batchBtn.setDisable(false);
+                });
+                batchTask.setOnFailed(evt -> {
+                    convoArea.appendText("Batch error: " + batchTask.getException().getMessage() + "\n");
+                    batchBtn.setDisable(false);
+                });
+                Thread batchThread = new Thread(batchTask);
+                batchThread.setDaemon(true);
+                batchThread.start();
+            });
+            layout.getChildren().add(batchBtn); // add before or after startBtn
 
             sendBtn.setOnAction(e -> {
                 String userMessage = inputField.getText();
@@ -123,7 +150,7 @@ public class RunSession { // all of these will be placed on the UI to ensure the
                     sendBtn.setDisable(false);
                 });
                 Thread thread = new Thread(task);
-                thread.setDaemon(true);
+                thread.setDaemon(true); // important daemond thread for when the model is evaulating an answer
                 thread.start();
             });
 
