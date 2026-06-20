@@ -11,9 +11,9 @@ public String location;
 public int age;
 public String languageStyle;
 public String vulnerabilityLevel;
-public List<String> vulnerabilityVariables;
+public List<String> vulnerabilityFactors;
 public String openingStyle;
-public String sysOverride;
+public String systemPromptOverride;
 
 
 }

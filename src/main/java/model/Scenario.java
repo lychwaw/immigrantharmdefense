@@ -6,8 +6,8 @@ public class Scenario {  // attributes for every scenario attached to a specific
     
     public String id;
     public String domain;
-    public String initialPromptDraft;
+    public String initialPromptTemplate;
     public List<String> variables;
     public List<String> harmCategoriesRelevant;
-    public String measuringPrompt;
+    public String baselinePrompt;
 }

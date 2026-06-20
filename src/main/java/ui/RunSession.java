@@ -11,6 +11,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import model.Persona;
 import model.Scenario;
+import workingengine.ConvoEngine;
 
 public class RunSession { // all of these will be placed on the UI to ensure the testing of the model is simple to use
 
@@ -42,6 +43,33 @@ public class RunSession { // all of these will be placed on the UI to ensure the
             inputField = new TextField();
             sendBtn = new Button("Send");
             sendBtn.setDisable(true); // only appears once a session is ran
+
+            ConvoEngine engine = new ConvoEngine();
+
+            startBtnButton.setOnAction(e -> {
+                String personaName = personaComboBox.getValue();
+                String scenarioDomain = scenarioComboBox.getValue();
+                String mode = modeComboBox.getValue();
+                if (personaName == null || scenarioDomain == null || mode == null) {
+                    convoArea.appendText("Please select a persona, scenario, and mode first.\n");
+                    return;
+                }
+                Persona selectedPersona = personas.stream().filter(p -> p.name.equals(personaName)).findFirst().orElse(null);
+                Scenario selectedScenario = scenarios.stream().filter(s -> s.domain.equals(scenarioDomain)).findFirst().orElse(null);
+
+                String response = engine.startSession(selectedPersona, selectedScenario, mode);
+                convoArea.appendText("AI: " + response + "\n");
+                sendBtn.setDisable(false);
+            });
+
+            sendBtn.setOnAction(e -> {
+                String userMessage = inputField.getText();
+                if (userMessage == null || userMessage.isBlank()) return;
+                convoArea.appendText("User: " + userMessage + "\n");
+                String response = engine.sendUserMessage(userMessage);
+                convoArea.appendText("AI: " + response + "\n");
+                inputField.clear();
+            });
 
             layout.getChildren().addAll(new Label("Select a persona:"), personaComboBox,  // container box holds the child items
                                         new Label("Select a scenario:"), scenarioComboBox,

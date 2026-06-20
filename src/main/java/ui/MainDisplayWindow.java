@@ -12,13 +12,13 @@ public class MainDisplayWindow extends Application {  // now this window will op
     public void start(Stage stage) {
         DatabaseManager.initialiseDB();
 
-        TabPane tabPane = new TabPane();
+        TabPane tabPane = new TabPane(); 
 
         Tab runTab = new Tab("Run Session"); // session tab of course, for running sessions
         runTab.setContent(new RunSession().getContent());
         runTab.setClosable(false);
 
-        Tab resultsTab = new Tab("View Results"); // results tba to see what data we get from the sessions
+        Tab resultsTab = new Tab("View Results"); // results tab to see what data we get from the sessions
         resultsTab.setContent(new ViewSeshResults().getContent());
         resultsTab.setClosable(false);
 
