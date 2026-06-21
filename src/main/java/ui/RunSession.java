@@ -1,5 +1,7 @@
 package ui;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import data.JSONLoader;
 import javafx.collections.FXCollections;
@@ -37,6 +39,21 @@ public class RunSession { // all of these will be placed on the UI to ensure the
             default:
                 return new ConvoEngine(new ClaudeConnector(), "claude-sonnet-4-6");
         }
+    }
+
+    // runs a blocking call on a background thread so the UI never freezes, then reports the result back on the FX thread
+    private void runAsync(Supplier<String> work, Consumer<String> onSuccess, Consumer<String> onFailure) {
+        Task<String> task = new Task<>() {
+            @Override
+            protected String call() {
+                return work.get();
+            }
+        };
+        task.setOnSucceeded(evt -> onSuccess.accept(task.getValue()));
+        task.setOnFailed(evt -> onFailure.accept(task.getException().getMessage()));
+        Thread thread = new Thread(task);
+        thread.setDaemon(true);
+        thread.start();
     }
 
     public VBox getContent(){
@@ -81,51 +98,39 @@ public class RunSession { // all of these will be placed on the UI to ensure the
                 startBtnButton.setDisable(true);
                 convoArea.appendText("Waiting for response... (may take up to a minute if rate-limited)\n");
 
-                Task<String> task = new Task<>() {
-                    @Override
-                    protected String call() {
-                        return engine.startSession(selectedPersona, selectedScenario, mode);
+                runAsync(
+                    () -> engine.startSession(selectedPersona, selectedScenario, mode),
+                    result -> {
+                        convoArea.appendText("AI: " + result + "\n");
+                        startBtnButton.setDisable(false);
+                        sendBtn.setDisable(false);
+                    },
+                    error -> {
+                        convoArea.appendText("AI: Error: " + error + "\n");
+                        startBtnButton.setDisable(false);  // different text strings are added to the convo area after certain actions, and the buttons are enabled/disabled depending on the state of the session
                     }
-                };
-                task.setOnSucceeded(evt -> {
-                    convoArea.appendText("AI: " + task.getValue() + "\n");
-                    startBtnButton.setDisable(false);
-                    sendBtn.setDisable(false);
-                });
-                task.setOnFailed(evt -> {
-                    convoArea.appendText("AI: Error: " + task.getException().getMessage() + "\n");
-                    startBtnButton.setDisable(false);  // different text strings are added to the convo area after certain actions, and the buttons are enabled/disabled depending on the state of the session
-                });
-                Thread thread = new Thread(task);
-                thread.setDaemon(true);
-                thread.start();
+                );
             });
 
             Button batchBtn = new Button("Run All Sessions");
             batchBtn.setOnAction(e -> { // when the batch button is clicked, the batch run is executed and the results are displayed in the conversation area
                 convoArea.clear();
-                convoArea.appendText("Running batch...\n");
+                convoArea.appendText("Running automated batch...\n");
                 batchBtn.setDisable(true);
 
-                Task<String> batchTask = new Task<>() {
-                    @Override
-                    protected String call() {
-                        return BatchRun.runAll(5);
+                runAsync(
+                    () -> BatchRun.runAll(6),
+                    result -> {
+                        convoArea.appendText(result);
+                        batchBtn.setDisable(false);  // if succeeds, returns results. if not, returns error below
+                    },
+                    error -> {
+                        convoArea.appendText("Batch error: " + error + "\n");
+                        batchBtn.setDisable(false);
                     }
-                };
-                batchTask.setOnSucceeded(evt -> {
-                    convoArea.appendText(batchTask.getValue());
-                    batchBtn.setDisable(false);
-                });
-                batchTask.setOnFailed(evt -> {
-                    convoArea.appendText("Batch error: " + batchTask.getException().getMessage() + "\n");
-                    batchBtn.setDisable(false);
-                });
-                Thread batchThread = new Thread(batchTask);
-                batchThread.setDaemon(true);
-                batchThread.start();
+                );
             });
-            layout.getChildren().add(batchBtn); // add before or after startBtn
+            layout.getChildren().add(batchBtn);
 
             sendBtn.setOnAction(e -> {
                 String userMessage = inputField.getText();
@@ -135,23 +140,17 @@ public class RunSession { // all of these will be placed on the UI to ensure the
                 sendBtn.setDisable(true);
                 convoArea.appendText("Waiting for response... (may take up to a minute if rate-limited)\n");
 
-                Task<String> task = new Task<>() {
-                    @Override
-                    protected String call() {
-                        return engine.sendUserMessage(userMessage);
+                runAsync(
+                    () -> engine.sendUserMessage(userMessage),
+                    result -> {
+                        convoArea.appendText("AI: " + result + "\n");
+                        sendBtn.setDisable(false);
+                    },
+                    error -> {
+                        convoArea.appendText("AI: Error: " + error + "\n");
+                        sendBtn.setDisable(false);
                     }
-                };
-                task.setOnSucceeded(evt -> {
-                    convoArea.appendText("AI: " + task.getValue() + "\n");
-                    sendBtn.setDisable(false);
-                });
-                task.setOnFailed(evt -> {
-                    convoArea.appendText("AI: Error: " + task.getException().getMessage() + "\n");
-                    sendBtn.setDisable(false);
-                });
-                Thread thread = new Thread(task);
-                thread.setDaemon(true); // important daemond thread for when the model is evaulating an answer
-                thread.start();
+                );
             });
 
             layout.getChildren().addAll(new Label("Select a persona:"), personaComboBox,  // container box holds the child items
