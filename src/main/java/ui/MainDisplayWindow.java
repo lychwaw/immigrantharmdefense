@@ -23,7 +23,7 @@ public class MainDisplayWindow extends Application {  // now this window will op
         resultsTab.setClosable(false);
 
         Tab reportTab = new Tab("Generate Report"); // finally , i can generate an overall report for the sessions
-        reportTab.setContent(new GenerateReport().getContent());
+        reportTab.setContent(new ReportCreator().getContent());
         reportTab.setClosable(false);
 
         tabPane.getTabs().addAll(runTab, resultsTab, reportTab);

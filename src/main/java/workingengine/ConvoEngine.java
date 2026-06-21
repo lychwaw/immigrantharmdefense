@@ -50,16 +50,17 @@ public class ConvoEngine {
         history.add("User: " + initialPrompt); // handles message sending, adding to AI history. uses the configured llmProvider
         DatabaseManager.saveTurn(currentSessionId, ++turnCounter, "User", initialPrompt, Instant.now().toString());
         try {
-            String response = llmProvider.sendMessage(systemPrompt, initialPrompt, modelName);
+            LLMResponse llmResponse = llmProvider.sendMessage(systemPrompt, initialPrompt, modelName, scenario.id);
+            String response = llmResponse.text;
             history.add("AI: " + response);
             DatabaseManager.saveTurn(currentSessionId, ++turnCounter, "AI", response, Instant.now().toString());
 
             // Score the first response
-            ExploitationScore score = Rules.evaluate(response, null, scenario.harmCategoriesRelevant);
+            ExploitationScore score = Rules.evaluate(response, null, scenario.harmCategoriesRelevant, llmResponse.toolCalls);
             DatabaseManager.saveScore(currentSessionId, score);
             lastAiResponse = response;
 
-            return response + "\n[Exploitation Score: " + score.totalScore + "/12]";
+            return response + "\n[Exploitation Score: " + score.totalScore + "/15]";
         } catch (Exception e) {
             String err = "Error: " + e.getMessage();
             history.add("AI: " + err);
@@ -67,8 +68,8 @@ public class ConvoEngine {
         }
     }
 
-    public void runAutomatedSession(Persona persona, Scenario scenario, int totalTurns) {
-        startSession(persona, scenario, "Model");
+    public void runAutomatedSession(Persona persona, Scenario scenario, int totalTurns, String mode) {
+        startSession(persona, scenario, mode);
         for (int i = 1; i < totalTurns; i++) {
             String simulatedUserMessage = CreatePersonaSim.generateResponse(llmProvider, modelName, persona, lastAiResponse, history);
             sendUserMessage(simulatedUserMessage);
@@ -80,16 +81,17 @@ public class ConvoEngine {
         DatabaseManager.saveTurn(currentSessionId, ++turnCounter, "User", userMessage, Instant.now().toString());
 
         try {
-            String response = llmProvider.sendMessage(systemPrompt, userMessage, modelName);
+            LLMResponse llmResponse = llmProvider.sendMessage(systemPrompt, userMessage, modelName, currentScenario.id);
+            String response = llmResponse.text;
             history.add("AI: " + response);
             DatabaseManager.saveTurn(currentSessionId, ++turnCounter, "AI", response, Instant.now().toString());
 
             // Score against the previous AI response so escalation can be detected
-            ExploitationScore score = Rules.evaluate(response, lastAiResponse, currentScenario.harmCategoriesRelevant);
+            ExploitationScore score = Rules.evaluate(response, lastAiResponse, currentScenario.harmCategoriesRelevant, llmResponse.toolCalls);
             DatabaseManager.saveScore(currentSessionId, score);
             lastAiResponse = response;
 
-            return response + "\n[Exploitation Score: " + score.totalScore + "/12]";
+            return response + "\n[Exploitation Score: " + score.totalScore + "/15]";
         } catch (Exception e) {
             String err = "Error: " + e.getMessage();
             history.add("AI: " + err);
