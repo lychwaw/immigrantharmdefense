@@ -1,11 +1,19 @@
 package data;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import model.ExploitationScore;
+import model.Persona;
+import model.Scenario;
 
 public class DatabaseManager {
 
@@ -85,4 +93,107 @@ private static final String DB_URL = "jdbc:sqlite:liamsredteamimmigrantdb.db";  
         System.out.println("Failed to save score: " + e.getMessage());
     }
 }
+
+    public static Map<String, Double> getMeanScoresByPersona() {
+        Map<String, Double> result = new LinkedHashMap<>();
+        String sql = "SELECT s.persona_id, AVG(sc.total_score) AS avg_score "
+                   + "FROM scores sc JOIN sessions s ON sc.session_id = s.id "
+                   + "GROUP BY s.persona_id";
+        try (Connection conn = connect(); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+            Map<String, String> personaNames = personaIdToName();
+            while (rs.next()) {
+                String personaId = rs.getString("persona_id");
+                String name = personaNames.getOrDefault(personaId, personaId);
+                result.put(name, rs.getDouble("avg_score"));
+            }
+        } catch (SQLException e) {
+            System.out.println("Failed to get mean scores by persona: " + e.getMessage());
+        }
+        return result;
+    }
+
+    public static Map<String, Double> getMeanScoresByScenario() {
+        Map<String, Double> result = new LinkedHashMap<>();
+        String sql = "SELECT s.scenario_id, AVG(sc.total_score) AS avg_score "
+                   + "FROM scores sc JOIN sessions s ON sc.session_id = s.id "
+                   + "GROUP BY s.scenario_id";
+        try (Connection conn = connect(); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+            Map<String, String> scenarioNames = scenarioIdToDomain();
+            while (rs.next()) {
+                String scenarioId = rs.getString("scenario_id");
+                String name = scenarioNames.getOrDefault(scenarioId, scenarioId);
+                result.put(name, rs.getDouble("avg_score"));
+            }
+        } catch (SQLException e) {
+            System.out.println("Failed to get mean scores by scenario: " + e.getMessage());
+        }
+        return result;
+    }
+
+    public static List<String[]> getWorstSessions(int limit) {
+        List<String[]> result = new ArrayList<>();
+        String sql = "SELECT s.id, s.persona_id, s.scenario_id, sc.total_score "
+                   + "FROM scores sc JOIN sessions s ON sc.session_id = s.id "
+                   + "ORDER BY sc.total_score DESC LIMIT ?";
+        try (Connection conn = connect(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, limit);
+            Map<String, String> personaNames = personaIdToName();
+            Map<String, String> scenarioNames = scenarioIdToDomain();
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String personaId = rs.getString("persona_id");
+                    String scenarioId = rs.getString("scenario_id");
+                    result.add(new String[] {
+                        rs.getString("id"),
+                        personaNames.getOrDefault(personaId, personaId),
+                        scenarioNames.getOrDefault(scenarioId, scenarioId),
+                        String.valueOf(rs.getInt("total_score"))
+                    });
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Failed to get worst sessions: " + e.getMessage());
+        }
+        return result;
+    }
+
+    public static String getTranscript(String sessionId) {
+        StringBuilder transcript = new StringBuilder();
+        String sql = "SELECT speaker, text FROM turns WHERE session_id = ? ORDER BY turn_number ASC";
+        try (Connection conn = connect(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, sessionId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    transcript.append(rs.getString("speaker")).append(": ").append(rs.getString("text")).append("\n\n");
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Failed to get transcript: " + e.getMessage());
+        }
+        return transcript.toString();
+    }
+
+    private static Map<String, String> personaIdToName() {
+        Map<String, String> map = new LinkedHashMap<>();
+        try {
+            for (Persona p : JSONLoader.loadPersonas()) {
+                map.put(p.id, p.name);
+            }
+        } catch (IOException e) {
+            System.out.println("Failed to load personas for name lookup: " + e.getMessage());
+        }
+        return map;
+    }
+
+    private static Map<String, String> scenarioIdToDomain() {
+        Map<String, String> map = new LinkedHashMap<>();
+        try {
+            for (Scenario s : JSONLoader.loadScenarios()) {
+                map.put(s.id, s.domain);
+            }
+        } catch (IOException e) {
+            System.out.println("Failed to load scenarios for name lookup: " + e.getMessage());
+        }
+        return map;
+    }
 }

@@ -24,7 +24,7 @@ public class GeminiConnector implements LLMProvider {
         JsonObject userPart = new JsonObject();
         userPart.addProperty("text", userMessage);
         JsonArray userParts = new JsonArray();
-        userParts.add(userPart);
+        userParts.add(userPart); // gemini needs user message in parts
 
         JsonObject userContent = new JsonObject();
         userContent.addProperty("role", "user");
