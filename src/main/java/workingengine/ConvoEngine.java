@@ -9,9 +9,11 @@ public class ConvoEngine {
     private String systemPrompt;
     private final LLMProvider llmProvider;
     private final String modelName;
+    private final LLMProvider judgeProvider;
+    private final String judgeModel;
 
     private String currentSessionId;
-    private String lastAiResponse; // keeps track of the last AI response for escalation detection
+    private String lastAiResponse; // last AI reply, fed to CreatePersonaSim so the simulated persona can react to it
     private Scenario currentScenario;
     private int turnCounter;
 
@@ -22,6 +24,14 @@ public class ConvoEngine {
     public ConvoEngine(LLMProvider llmProvider, String modelName) {
         this.llmProvider = llmProvider;
         this.modelName = modelName;
+        // judge is always the OTHER model, so the model under test never grades its own output
+        if (modelName.toLowerCase().contains("claude")) {
+            this.judgeProvider = new GeminiConnector();
+            this.judgeModel = "gemini-2.5-flash-lite";
+        } else {
+            this.judgeProvider = new ClaudeConnector();
+            this.judgeModel = "claude-sonnet-4-6";
+        }
     }
 
     public String startSession(Persona persona, Scenario scenario, String mode) {
@@ -50,17 +60,16 @@ public class ConvoEngine {
         history.add("User: " + initialPrompt); // handles message sending, adding to AI history. uses the configured llmProvider
         DatabaseManager.saveTurn(currentSessionId, ++turnCounter, "User", initialPrompt, Instant.now().toString());
         try {
-            LLMResponse llmResponse = llmProvider.sendMessage(systemPrompt, initialPrompt, modelName, scenario.id);
-            String response = llmResponse.text;
+            String response = llmProvider.sendMessage(systemPrompt, initialPrompt, modelName);
             history.add("AI: " + response);
             DatabaseManager.saveTurn(currentSessionId, ++turnCounter, "AI", response, Instant.now().toString());
 
             // Score the first response
-            ExploitationScore score = Rules.evaluate(response, null, scenario.harmCategoriesRelevant, llmResponse.toolCalls);
+            ExploitationScore score = Rules.evaluate(initialPrompt, response, judgeProvider, judgeModel);
             DatabaseManager.saveScore(currentSessionId, score);
             lastAiResponse = response;
 
-            return response + "\n[Exploitation Score: " + score.totalScore + "/15]";
+            return response + "\n[Exploitation Score: " + score.totalScore + "/12]";
         } catch (Exception e) {
             String err = "Error: " + e.getMessage();
             history.add("AI: " + err);
@@ -81,17 +90,15 @@ public class ConvoEngine {
         DatabaseManager.saveTurn(currentSessionId, ++turnCounter, "User", userMessage, Instant.now().toString());
 
         try {
-            LLMResponse llmResponse = llmProvider.sendMessage(systemPrompt, userMessage, modelName, currentScenario.id);
-            String response = llmResponse.text;
+            String response = llmProvider.sendMessage(systemPrompt, userMessage, modelName);
             history.add("AI: " + response);
             DatabaseManager.saveTurn(currentSessionId, ++turnCounter, "AI", response, Instant.now().toString());
 
-            // Score against the previous AI response so escalation can be detected
-            ExploitationScore score = Rules.evaluate(response, lastAiResponse, currentScenario.harmCategoriesRelevant, llmResponse.toolCalls);
+            ExploitationScore score = Rules.evaluate(userMessage, response, judgeProvider, judgeModel);
             DatabaseManager.saveScore(currentSessionId, score);
             lastAiResponse = response;
 
-            return response + "\n[Exploitation Score: " + score.totalScore + "/15]";
+            return response + "\n[Exploitation Score: " + score.totalScore + "/12]";
         } catch (Exception e) {
             String err = "Error: " + e.getMessage();
             history.add("AI: " + err);

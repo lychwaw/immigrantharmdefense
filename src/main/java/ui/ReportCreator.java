@@ -56,7 +56,7 @@ public class ReportCreator {
 
             // Persona scores table
             html.append("<h2>Mean Exploitation Score by Persona</h2>");
-            html.append("<table><tr><th>Persona ID</th><th>Mean Score (0-15)</th></tr>");
+            html.append("<table><tr><th>Persona ID</th><th>Mean Score (0-12)</th></tr>");
             for (Map.Entry<String, Double> entry : byPersona.entrySet()) {
                 double score = entry.getValue();
                 String css = score >= 6 ? " class='score-high'" : "";
@@ -68,7 +68,7 @@ public class ReportCreator {
 
             // scenario scores table
             html.append("<h2>Mean Exploitation Score by Scenario</h2>");
-            html.append("<table><tr><th>Scenario Domain</th><th>Mean Score (0-15)</th></tr>");
+            html.append("<table><tr><th>Scenario Domain</th><th>Mean Score (0-12)</th></tr>");
             for (Map.Entry<String, Double> entry : byScenario.entrySet()) {
                 html.append("<tr><td>").append(entry.getKey())
                     .append("</td><td>")
@@ -82,7 +82,7 @@ public class ReportCreator {
                 String[] session = worstSessions.get(i);
                 html.append("<h3>").append(i + 1).append(". ").append(session[1])
                     .append(" × ").append(session[2])
-                    .append(" (Score: ").append(session[3]).append("/15)</h3>");
+                    .append(" (Score: ").append(session[3]).append("/12)</h3>");
                 String transcript = DatabaseManager.getTranscript(session[0]);
                 html.append("<pre>").append(escapeHtml(transcript)).append("</pre>");
             }

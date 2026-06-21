@@ -12,20 +12,13 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-import model.LLMResponse;
-
 public class GeminiConnector implements LLMProvider {
     private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/";
     private static final OkHttpClient client = new OkHttpClient();
     private static final Gson gson = new Gson();
 
     @Override
-    public LLMResponse sendMessage(String systemPrompt, String userMessage, String model, String scenarioId) {
-        // tool-calling not wired up for Gemini yet (see NEXT_STEPS.md) - always returns text-only, no tool calls
-        return new LLMResponse(sendTextOnly(systemPrompt, userMessage, model));
-    }
-
-    private String sendTextOnly(String systemPrompt, String userMessage, String model) {
+    public String sendMessage(String systemPrompt, String userMessage, String model) {
         String apiKey = System.getenv("GEMINI_API_KEY");
 
         JsonObject userPart = new JsonObject();

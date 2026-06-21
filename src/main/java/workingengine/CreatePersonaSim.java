@@ -28,8 +28,7 @@ public class CreatePersonaSim {
         String userMessage = "Continue the conversation as yourself. Please respond to the AI's message naturally.";
 
         try {
-            // scenarioId is null here: this call simulates the persona's own reply, not the AI-under-test, so no tools should be offered
-            String content = llmProvider.sendMessage(sysPrompt.toString(), userMessage, model, null).text;
+            String content = llmProvider.sendMessage(sysPrompt.toString(), userMessage, model);
             if (content == null || content.isBlank()) {
                 // simple canned response based on persona vulnerability
                 return getFallbackResponse(persona);

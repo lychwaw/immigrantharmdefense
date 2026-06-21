@@ -29,7 +29,7 @@ public class MainDisplayWindow extends Application {  // now this window will op
         tabPane.getTabs().addAll(runTab, resultsTab, reportTab);
 
         stage.setScene(new Scene(tabPane, 800, 600));
-        stage.setTitle("Red-Team Immigrant Danger Simulator");
+        stage.setTitle("PERSONA Adversarial Simulator");
         stage.show();  
     }
 

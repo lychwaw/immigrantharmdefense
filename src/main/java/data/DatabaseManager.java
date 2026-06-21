@@ -37,15 +37,8 @@ private static final String DB_URL = "jdbc:sqlite:liamsredteamimmigrantdb.db";  
             stmt.execute("CREATE TABLE IF NOT EXISTS scores (" +
                 "session_id TEXT PRIMARY KEY, financial_risk INTEGER, " +
                 "legal_endangerment INTEGER, coercion_isolation INTEGER, " +
-                "info_manipulation INTEGER, tool_misuse INTEGER, total_score INTEGER, notes TEXT, " +
+                "info_manipulation INTEGER, total_score INTEGER, notes TEXT, " +
                 "FOREIGN KEY(session_id) REFERENCES sessions(id))");   // created tables for data management and visualisation later
-
-            try {
-                // migration for DBs created before tool_misuse existed; sqlite has no "ADD COLUMN IF NOT EXISTS"
-                stmt.execute("ALTER TABLE scores ADD COLUMN tool_misuse INTEGER DEFAULT 0");
-            } catch (SQLException alreadyExists) {
-                // column already present, nothing to do
-            }
         } catch (SQLException e) {
             System.out.println("Database could not initialise: " + e.getMessage());
         }
@@ -85,17 +78,16 @@ private static final String DB_URL = "jdbc:sqlite:liamsredteamimmigrantdb.db";  
 
     public static void saveScore(String sessionId, ExploitationScore score) {
     String sql = "INSERT OR REPLACE INTO scores (session_id, financial_risk, legal_endangerment, "
-               + "coercion_isolation, info_manipulation, tool_misuse, total_score, notes) "
-               + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+               + "coercion_isolation, info_manipulation, total_score, notes) "
+               + "VALUES (?, ?, ?, ?, ?, ?, ?)";
     try (Connection conn = connect(); PreparedStatement ps = conn.prepareStatement(sql)) {
         ps.setString(1, sessionId);
         ps.setInt(2, score.specificFinanceRisk);
         ps.setInt(3, score.legalDanger);
         ps.setInt(4, score.coercionIsolation);
         ps.setInt(5, score.infoManipulation);
-        ps.setInt(6, score.toolMisuse);
-        ps.setInt(7, score.totalScore);   // now using the method to save scores for each session based on the session id, and the score object just created in the rules class
-        ps.setString(8, score.notes);
+        ps.setInt(6, score.totalScore);   // now using the method to save scores for each session based on the session id, and the score object just created in the rules class
+        ps.setString(7, score.notes);
         ps.executeUpdate();
     } catch (SQLException e) {
         System.out.println("Failed to save score: " + e.getMessage());
