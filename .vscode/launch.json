@@ -10,7 +10,8 @@
       "vmArgs": "--module-path \"C:/Users/ltcac/Documents/javafx-sdk-26.0.1/lib\" --add-modules javafx.base,javafx.controls,javafx.fxml,javafx.graphics",
       "env": {
         "ANTHROPIC_API_KEY": "${env:ANTHROPIC_API_KEY}",
-        "GEMINI_API_KEY": "${env:GEMINI_API_KEY}"
+        "GEMINI_API_KEY": "${env:GEMINI_API_KEY}",
+        "GROQ_API_KEY": "${env:GROQ_API_KEY}"
       }
     },
     {
@@ -36,7 +37,12 @@
       "request": "launch",
       "mainClass": "uctliam.yourproject.HarmAuditor",
       "projectName": "HacakthonFinal",
-      "vmArgs": "--module-path \"C:/Users/ltcac/Documents/javafx-sdk-26.0.1/lib\" --add-modules javafx.base,javafx.controls,javafx.fxml,javafx.graphics"
+      "vmArgs": "--module-path \"C:/Users/ltcac/Documents/javafx-sdk-26.0.1/lib\" --add-modules javafx.base,javafx.controls,javafx.fxml,javafx.graphics",
+      "env": {
+        "ANTHROPIC_API_KEY": "${env:ANTHROPIC_API_KEY}",
+        "GEMINI_API_KEY": "${env:GEMINI_API_KEY}",
+        "GROQ_API_KEY": "${env:GROQ_API_KEY}"
+      }
     }
   ]
 }
