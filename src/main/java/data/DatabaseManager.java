@@ -37,8 +37,24 @@ private static final String DB_URL = "jdbc:sqlite:liamsredteamimmigrantdb.db";  
             stmt.execute("CREATE TABLE IF NOT EXISTS scores (" +
                 "session_id TEXT PRIMARY KEY, financial_risk INTEGER, " +
                 "legal_endangerment INTEGER, coercion_isolation INTEGER, " +
-                "info_manipulation INTEGER, total_score INTEGER, notes TEXT, " +
+                "info_manipulation INTEGER, helpfulness_gap INTEGER, total_score INTEGER, notes TEXT, " +
                 "FOREIGN KEY(session_id) REFERENCES sessions(id))");   // created tables for data management and visualisation later
+
+            try {
+                // migration for DBs created before helpfulness_gap existed; sqlite has no "ADD COLUMN IF NOT EXISTS"
+                stmt.execute("ALTER TABLE scores ADD COLUMN helpfulness_gap INTEGER DEFAULT 0");
+            } catch (SQLException alreadyExists) {
+                // column already present, nothing to do
+            }
+
+            // per-turn score trajectory, additive alongside `scores` (which only ever holds the final turn) -
+            // lets the report show whether scores diverge by persona early in a conversation and converge to a
+            // uniform refusal later, rather than only ever seeing the converged end state
+            stmt.execute("CREATE TABLE IF NOT EXISTS turn_scores (" +
+                "session_id TEXT, turn_number INTEGER, financial_risk INTEGER, " +
+                "legal_endangerment INTEGER, coercion_isolation INTEGER, info_manipulation INTEGER, " +
+                "helpfulness_gap INTEGER, total_score INTEGER, notes TEXT, " +
+                "PRIMARY KEY (session_id, turn_number), FOREIGN KEY(session_id) REFERENCES sessions(id))");
         } catch (SQLException e) {
             System.out.println("Database could not initialise: " + e.getMessage());
         }
@@ -78,21 +94,67 @@ private static final String DB_URL = "jdbc:sqlite:liamsredteamimmigrantdb.db";  
 
     public static void saveScore(String sessionId, ExploitationScore score) {
     String sql = "INSERT OR REPLACE INTO scores (session_id, financial_risk, legal_endangerment, "
-               + "coercion_isolation, info_manipulation, total_score, notes) "
-               + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+               + "coercion_isolation, info_manipulation, helpfulness_gap, total_score, notes) "
+               + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
     try (Connection conn = connect(); PreparedStatement ps = conn.prepareStatement(sql)) {
         ps.setString(1, sessionId);
         ps.setInt(2, score.specificFinanceRisk);
         ps.setInt(3, score.legalDanger);
         ps.setInt(4, score.coercionIsolation);
         ps.setInt(5, score.infoManipulation);
-        ps.setInt(6, score.totalScore);   // now using the method to save scores for each session based on the session id, and the score object just created in the rules class
-        ps.setString(7, score.notes);
+        ps.setInt(6, score.helpfulnessGap);
+        ps.setInt(7, score.totalScore);   // now using the method to save scores for each session based on the session id, and the score object just created in the rules class
+        ps.setString(8, score.notes);
         ps.executeUpdate();
     } catch (SQLException e) {
         System.out.println("Failed to save score: " + e.getMessage());
     }
 }
+
+    public static void saveTurnScore(String sessionId, int turnNumber, ExploitationScore score) {
+        String sql = "INSERT OR REPLACE INTO turn_scores (session_id, turn_number, financial_risk, "
+                   + "legal_endangerment, coercion_isolation, info_manipulation, helpfulness_gap, total_score, notes) "
+                   + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        try (Connection conn = connect(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, sessionId);
+            ps.setInt(2, turnNumber);
+            ps.setInt(3, score.specificFinanceRisk);
+            ps.setInt(4, score.legalDanger);
+            ps.setInt(5, score.coercionIsolation);
+            ps.setInt(6, score.infoManipulation);
+            ps.setInt(7, score.helpfulnessGap);
+            ps.setInt(8, score.totalScore);
+            ps.setString(9, score.notes);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("Failed to save turn score: " + e.getMessage());
+        }
+    }
+
+    // full per-turn score trajectory across all sessions, used by the report's escalation-over-turns chart
+    public static List<String[]> getAllTurnScores() {
+        List<String[]> result = new ArrayList<>();
+        String sql = "SELECT s.persona_id, ts.turn_number, ts.financial_risk, ts.legal_endangerment, "
+                   + "ts.coercion_isolation, ts.info_manipulation, ts.helpfulness_gap, ts.total_score "
+                   + "FROM turn_scores ts JOIN sessions s ON ts.session_id = s.id";
+        try (Connection conn = connect(); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                result.add(new String[] {
+                    rs.getString("persona_id"),
+                    String.valueOf(rs.getInt("turn_number")),
+                    String.valueOf(rs.getInt("financial_risk")),
+                    String.valueOf(rs.getInt("legal_endangerment")),
+                    String.valueOf(rs.getInt("coercion_isolation")),
+                    String.valueOf(rs.getInt("info_manipulation")),
+                    String.valueOf(rs.getInt("helpfulness_gap")),
+                    String.valueOf(rs.getInt("total_score"))
+                });
+            }
+        } catch (SQLException e) {
+            System.out.println("Could not get all turn scores: " + e.getMessage());
+        }
+        return result;
+    }
 
     public static Map<String, Double> getMeanScoresByPersona() {
         Map<String, Double> result = new LinkedHashMap<>();
@@ -154,6 +216,35 @@ private static final String DB_URL = "jdbc:sqlite:liamsredteamimmigrantdb.db";  
             }
         } catch (SQLException e) {
             System.out.println("Could not get worst sessions: " + e.getMessage());
+        }
+        return result;
+    }
+
+    // full per-session score breakdown, used by the bias-isolation report (heatmap + evidence sections)
+    public static List<String[]> getAllSessionScores() {
+        List<String[]> result = new ArrayList<>();
+        String sql = "SELECT s.id, s.persona_id, s.scenario_id, s.mode, "
+                   + "sc.financial_risk, sc.legal_endangerment, sc.coercion_isolation, sc.info_manipulation, "
+                   + "sc.helpfulness_gap, sc.total_score, sc.notes "
+                   + "FROM sessions s JOIN scores sc ON sc.session_id = s.id";
+        try (Connection conn = connect(); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                result.add(new String[] {
+                    rs.getString("id"),
+                    rs.getString("persona_id"),
+                    rs.getString("scenario_id"),
+                    rs.getString("mode"),
+                    String.valueOf(rs.getInt("financial_risk")),
+                    String.valueOf(rs.getInt("legal_endangerment")),
+                    String.valueOf(rs.getInt("coercion_isolation")),
+                    String.valueOf(rs.getInt("info_manipulation")),
+                    String.valueOf(rs.getInt("helpfulness_gap")),
+                    String.valueOf(rs.getInt("total_score")),
+                    rs.getString("notes")
+                });
+            }
+        } catch (SQLException e) {
+            System.out.println("Could not get all session scores: " + e.getMessage());
         }
         return result;
     }

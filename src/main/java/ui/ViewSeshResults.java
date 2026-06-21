@@ -44,13 +44,13 @@ public class ViewSeshResults { // this is the tab where we can see the results o
         Map<String, Double> byPersona = DatabaseManager.getMeanScoresByPersona();  // map collection view for our data
         sb.append("Mean Exploitation Score by Persona:\n");
         for (Map.Entry<String, Double> entry : byPersona.entrySet()) {
-            sb.append("  ").append(entry.getKey()).append(": ").append(String.format(Locale.US, "%.1f", entry.getValue())).append("/12\n");
+            sb.append("  ").append(entry.getKey()).append(": ").append(String.format(Locale.US, "%.1f", entry.getValue())).append("/15\n");
         }
 
         Map<String, Double> byScenario = DatabaseManager.getMeanScoresByScenario();
         sb.append("\nMean Score by Scenario:\n");
         for (Map.Entry<String, Double> entry : byScenario.entrySet()) {
-            sb.append("  ").append(entry.getKey()).append(": ").append(String.format(Locale.US, "%.1f", entry.getValue())).append("/12\n");
+            sb.append("  ").append(entry.getKey()).append(": ").append(String.format(Locale.US, "%.1f", entry.getValue())).append("/15\n");
         }
 
         summaryArea.setText(sb.toString());
