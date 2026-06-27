@@ -1,9 +1,15 @@
 # PERSONA — Persona Exploitation & Relational Safety Assessment
 
+**Repository:** [github.com/lychwaw/immigrantharmdefense](https://github.com/lychwaw/immigrantharmdefense)
+
 An adversarial simulation framework for testing whether Claude treats vulnerable
 immigrant personas differently based on perceived vulnerability and language register,
 and for auditing whether the information it gives them is actually true. Full writeup:
 `PROJECT_PERSONA_paper.tex`.
+
+```
+git clone https://github.com/lychwaw/immigrantharmdefense.git
+```
 
 ## Fastest way to see the evidence (no setup required)
 
